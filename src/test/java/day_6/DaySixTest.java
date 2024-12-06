@@ -1,6 +1,5 @@
 package day_6;
 
-import day_6.DaySix.Guard;
 import day_6.DaySix.InputParser;
 import day_6.DaySix.ManufacturingLab;
 import day_6.DaySix.Position;
@@ -29,7 +28,7 @@ class DaySixTest {
 
     @Test
     void should_parse_position_map() {
-        List<List<Position>> positionMap = InputParser.parse(INPUT).getPositionMap();
+        List<List<Position>> positionMap = InputParser.parse(INPUT).getGuard().getPositionMap();
         assertThat(positionMap).flatMap(l -> l.stream().filter(Position::isObstruction).toList())
                 .containsExactly(
                         new Position(4, 0, true),
@@ -41,12 +40,6 @@ class DaySixTest {
                         new Position(0, 8, true),
                         new Position(6, 9, true)
                 );
-    }
-
-    @Test
-    void should_parse_guard() {
-        Guard guard = InputParser.parse(INPUT).getGuard();
-        assertThat(guard.getPosition()).isEqualTo(new Position(4, 6, false));
     }
 
     @Test

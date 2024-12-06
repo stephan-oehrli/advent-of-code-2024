@@ -15,9 +15,9 @@ import static day_6.DaySix.Direction.*;
 public class DaySix {
 
     public static void main(String[] args) throws FileNotFoundException {
+        long now = System.currentTimeMillis();
         ManufacturingLab manufacturingLab = InputParser.parse(FileUtil.readToList("day_6.txt"));
         System.out.println("Solution for part one is: " + manufacturingLab.countDistinctGuardianPositions());
-        long now = System.currentTimeMillis();
         System.out.println("Solution for part two is: " + manufacturingLab.countPossibleObstructionPositions());
         System.out.println(System.currentTimeMillis() - now + "ms");
     }
@@ -49,15 +49,12 @@ public class DaySix {
         }
     }
 
+    @Getter
     static class Guard {
 
         private final List<List<Position>> positionMap;
-        @Getter
-        private final Position startPosition;
-        @Getter
         private Position position;
         private Position nextPosition;
-        @Getter
         private Direction direction;
 
         public Guard(List<List<Position>> positionMap, Position position) {
@@ -66,7 +63,6 @@ public class DaySix {
 
         public Guard(List<List<Position>> positionMap, Position position, Direction direction) {
             this.positionMap = positionMap;
-            this.startPosition = position;
             this.position = position;
             this.direction = direction;
         }
@@ -95,11 +91,6 @@ public class DaySix {
             return position;
         }
 
-        public void reset() {
-            this.position = startPosition;
-            this.direction = UP;
-        }
-
         public PositionMemory remember() {
             return PositionMemory.of(position, direction);
         }
@@ -108,33 +99,17 @@ public class DaySix {
             return new Guard(guard.positionMap, guard.position, guard.direction);
         }
     }
-
+    
     @Getter
     static class ManufacturingLab {
 
-        private final List<List<Position>> positionMap;
         private final Guard guard;
         private final Set<Position> visitedPositions = new HashSet<>();
         private final Set<Position> possibleObstructions = new HashSet<>();
 
-        ManufacturingLab(List<List<Position>> positionMap, Guard guard) {
-            this.positionMap = positionMap;
+        public ManufacturingLab(Guard guard) {
             this.guard = guard;
             walkTheMap();
-        }
-
-        private void walkTheMap() {
-            visitedPositions.add(guard.getPosition());
-            Position nextPosition = guard.peekNextPosition();
-            while (nextPosition != null) {
-                if (nextPosition.isObstruction()) {
-                    guard.turnRight();
-                } else {
-                    visitedPositions.add(guard.walk());
-                }
-                nextPosition = guard.peekNextPosition();
-            }
-            guard.reset();
         }
 
         public int countDistinctGuardianPositions() {
@@ -142,38 +117,45 @@ public class DaySix {
         }
 
         public int countPossibleObstructionPositions() {
-            for (Position position : visitedPositions) {
-                if (isPossibleObstruction(position)) {
-                    possibleObstructions.add(position);
-                }
-            }
             return possibleObstructions.size();
         }
 
-        private boolean isPossibleObstruction(Position position) {
-            if (guard.getStartPosition().equals(position)) {
-                return false;
-            }
-            
-            Guard ghost = Guard.copy(guard);
-            position.setObstruction(true);
-            Set<PositionMemory> ghostMemories = new HashSet<>();
-            
-            while (ghost.peekNextPosition() != null) {
-                if (ghostMemories.contains(ghost.remember())) {
-                    position.setObstruction(false);
-                    return true;
+        private void walkTheMap() {
+            visitedPositions.add(guard.getPosition());
+            Position nextPosition = guard.peekNextPosition();
+            while (nextPosition != null) {
+                checkPossibleObstruction().ifPresent(possibleObstructions::add);
+                if (nextPosition.isObstruction()) {
+                    guard.turnRight();
+                } else {
+                    visitedPositions.add(guard.walk());
                 }
-                ghostMemories.add(ghost.remember());
+                nextPosition = guard.peekNextPosition();
+            }
+        }
+
+        private Optional<Position> checkPossibleObstruction() {
+            Guard ghost = Guard.copy(guard);
+            Position position = ghost.peekNextPosition();
+            if (position.isObstruction() || visitedPositions.contains(position)) {
+                return Optional.empty();
+            }
+            position.setObstruction(true);
+            Set<PositionMemory> ghostMemory = new HashSet<>();
+            while (ghost.peekNextPosition() != null) {
+                if (ghostMemory.contains(ghost.remember())) {
+                    position.setObstruction(false);
+                    return Optional.of(position);
+                }
+                ghostMemory.add(ghost.remember());
                 if (ghost.peekNextPosition().isObstruction()) {
                     ghost.turnRight();
                 } else {
                     ghost.walk();
                 }
             }
-            
             position.setObstruction(false);
-            return false;
+            return Optional.empty();
         }
     }
 
@@ -196,7 +178,7 @@ public class DaySix {
                 positionMap.add(positions);
             }
             assert guard != null;
-            return new ManufacturingLab(positionMap, guard);
+            return new ManufacturingLab(guard);
         }
     }
 }
