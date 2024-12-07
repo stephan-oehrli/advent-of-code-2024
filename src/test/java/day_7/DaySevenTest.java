@@ -44,8 +44,8 @@ class DaySevenTest {
     void should_calculate_valid_equation_sum_with_2_different_operators() {
         List<Operation> operations = InputParser.parse(INPUT);
         assertThat(operations.stream()
-                .filter(operation -> operation.isValidEquation(2))
-                .map(Operation::result)
+                .filter(Operation::isValidEquation)
+                .map(Operation::getResult)
                 .reduce(Long::sum)
         ).hasValue(3749L);
     }
@@ -54,8 +54,8 @@ class DaySevenTest {
     void should_calculate_valid_equation_sum_with_3_different_operators() {
         List<Operation> operations = InputParser.parse(INPUT);
         assertThat(operations.stream()
-                .filter(operation -> operation.isValidEquation(3))
-                .map(Operation::result)
+                .filter(Operation::isValidEquationWithConcatenation)
+                .map(Operation::getResult)
                 .reduce(Long::sum)
         ).hasValue(11387L);
     }

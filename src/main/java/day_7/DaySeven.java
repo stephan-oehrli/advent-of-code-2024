@@ -1,5 +1,6 @@
 package day_7;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
@@ -9,9 +10,9 @@ import utils.ParserUtil;
 
 import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Stack;
 
-import static day_7.DaySeven.Operator.ADD;
-import static day_7.DaySeven.Operator.MULTIPLY;
+import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 public class DaySeven {
 
@@ -19,12 +20,12 @@ public class DaySeven {
         long start = System.currentTimeMillis();
         List<Operation> operations = InputParser.parse(FileUtil.readToList("day_7.txt"));
         Long resultOne = operations.stream()
-                .filter(operation -> operation.isValidEquation(2))
-                .map(Operation::result)
+                .filter(Operation::isValidEquation)
+                .map(Operation::getResult)
                 .reduce(Math::addExact).orElseThrow();
         Long resultTwo = operations.stream()
-                .filter(operation -> operation.isValidEquation(3))
-                .map(Operation::result)
+                .filter(Operation::isValidEquationWithConcatenation)
+                .map(Operation::getResult)
                 .reduce(Math::addExact).orElseThrow();
 
         System.out.println("Solution for part one is: " + resultOne);
@@ -32,52 +33,62 @@ public class DaySeven {
         System.out.println(System.currentTimeMillis() - start + "ms");
     }
 
-    record Operation(Long result, List<Integer> operands) {
+    @RequiredArgsConstructor
+    @Getter
+    @EqualsAndHashCode
+    static final class Operation {
 
-        public boolean isValidEquation(int numOfOperatorsToCheck) {
-            int possibleOperations = (int) Math.pow(numOfOperatorsToCheck, operands.size() - 1);
-            int bitmaskLength = Integer.toString(possibleOperations, numOfOperatorsToCheck).length() - 1;
-            for (int i = 0; i < possibleOperations; i++) {
-                String bitmask = StringUtils.leftPad(Integer.toString(i, numOfOperatorsToCheck), bitmaskLength, '0');
-                if (isValidEquation(bitmask)) {
+        private final Long result;
+        private final List<Integer> operands;
+
+        private final Stack<Integer> stack = new Stack<>();
+        private boolean includeConcatenation;
+
+        public boolean isValidEquation() {
+            return isValidEquation(false);
+        }
+
+        public boolean isValidEquationWithConcatenation() {
+            return isValidEquation(true);
+        }
+
+        private boolean isValidEquation(boolean includeConcatenation) {
+            stack.clear();
+            stack.addAll(operands);
+            this.includeConcatenation = includeConcatenation;
+            return checkValidEquation(result);
+        }
+
+        private boolean checkValidEquation(Long number) {
+            Integer operand = stack.pop();
+            if (stack.isEmpty()) {
+                if (operand.equals(number.intValue())) {
+                    return true;
+                }
+                stack.push(operand);
+                return false;
+            }
+            if (includeConcatenation && String.valueOf(number).endsWith(String.valueOf(operand))) {
+                String numberString = String.valueOf(number);
+                int newLength = numberString.length() - String.valueOf(operand).length();
+                Long newNumber = Long.valueOf(defaultIfEmpty(numberString.substring(0, newLength), "0"));
+                if (checkValidEquation(newNumber)) {
                     return true;
                 }
             }
-            return false;
-        }
-
-        private boolean isValidEquation(String bitmask) {
-            List<Operator> operators = bitmask.chars()
-                    .mapToObj(c -> Operator.values()[Character.getNumericValue(c)])
-                    .toList();
-
-            long equationResult = operands.get(0);
-            for (int i = 1; i < operands.size(); i++) {
-                equationResult = apply(operators.get(i - 1), equationResult, operands.get(i));
-                if (equationResult > result) {
-                    return false;
-                }
+            if (number % operand == 0 && checkValidEquation(number / operand)) {
+                return true;
             }
-            return result.equals(equationResult);
-        }
-
-        private long apply(Operator operator, long operand1, long operand2) {
-            return operator == ADD ? Math.addExact(operand1, operand2) :
-                    operator == MULTIPLY ? Math.multiplyExact(operand1, operand2) :
-                            Long.parseLong(operand1 + "" + operand2);
+            if (number > operand && checkValidEquation(number - operand)) {
+                return true;
+            }
+            stack.push(operand);
+            return false;
         }
 
         public static Operation of(Long result, List<Integer> operands) {
             return new Operation(result, operands);
         }
-    }
-
-    @RequiredArgsConstructor
-    @Getter
-    enum Operator {
-        ADD("+"), MULTIPLY("*"), CONCAT("||");
-
-        private final String sign;
     }
 
     @UtilityClass
