@@ -11,7 +11,7 @@ import java.util.List;
 public class ParserUtil {
 
     public static List<String> splitByWhiteSpace(String input) {
-        return Arrays.asList(StringUtils.splitByWholeSeparator(input, null));
+        return new ArrayList<>(Arrays.asList(StringUtils.splitByWholeSeparator(input, null)));
     }
     
     public static List<Integer> convertToIntegerList(List<String> inputStrings) {
