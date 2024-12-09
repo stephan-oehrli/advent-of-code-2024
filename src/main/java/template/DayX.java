@@ -9,10 +9,12 @@ import java.util.List;
 public class DayX {
 
     public static void main(String[] args) throws FileNotFoundException {
+        long start = System.currentTimeMillis();
         List<String> input = FileUtil.readToList("day_x.txt");
 
         System.out.println("Solution for part one is: ");
         System.out.println("Solution for part two is: ");
+        System.out.println("Duration: " + (System.currentTimeMillis() - start) + "ms");
     }
 
     @UtilityClass
