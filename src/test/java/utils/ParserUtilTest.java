@@ -15,9 +15,14 @@ class ParserUtilTest {
     }
 
     @Test
+    void should_split_by_separator() {
+        assertThat(ParserUtil.splitBySeparator("0,15,4,30", ","))
+                .containsExactly("0", "15", "4", "30");
+    }
+
+    @Test
     void should_convert_to_integer_list() {
         assertThat(ParserUtil.convertToIntegerList(Arrays.asList("1", "0", "4", "7")))
                 .containsExactly(1, 0, 4, 7);
     }
-
 }
